@@ -69,13 +69,15 @@ Function New-GroupMemberReport {
                 try
                 {
                     Expand-Archive -Path $output -DestinationPath $extractpath
+                    Start-Sleep -Seconds 2
                     Remove-Item $output
                 }
                 catch
                 {}
             
             }
-            Import-Module $extractpath\EnhancedHTML2.psm1
+            $modulefile = Join-Path $extractpath -ChildPath "EnhancedHTML2.psm1"
+            Import-Module $modulefile
 
 
         $style = @"
