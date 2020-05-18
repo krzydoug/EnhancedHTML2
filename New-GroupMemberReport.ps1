@@ -44,7 +44,7 @@ Function New-GroupMemberReport {
             else
             {
                 $url = "https://www.powershellgallery.com/api/v2/package/EnhancedHTML2/2.0"
-                $output = = Join-Path $env:TEMP -ChildPath "enhancedhtml2.1.0.1.zip"
+                $output = Join-Path $env:TEMP -ChildPath "enhancedhtml2.1.0.1.zip"
             
                 $wc = New-Object System.Net.WebClient
 
