@@ -39,7 +39,7 @@ Function New-GroupMemberReport {
             else
             {
                 $url = "https://www.powershellgallery.com/api/v2/package/EnhancedHTML2/2.0"
-                $output = "$PSScriptRoot\enhancedhtml2.2.0.0.zip"
+                $output = "$PSScriptRoot\enhancedhtml2.1.0.1.zip"
             
                 $wc = New-Object System.Net.WebClient
 
