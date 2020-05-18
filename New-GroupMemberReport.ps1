@@ -32,6 +32,11 @@ Function New-GroupMemberReport {
 
         BEGIN
         {
+            if(($rsat = Get-WindowsCapability -Name rsat.active* -Online).state -ne 'Installed')
+            {
+                Add-WindowsCapability -Name $rsat.name -Online
+            }
+        
             if(Get-Module -Name EnhancedHTML2 -ErrorAction SilentlyContinue)
             {
                 Remove-Module EnhancedHTML2
@@ -39,7 +44,7 @@ Function New-GroupMemberReport {
             else
             {
                 $url = "https://www.powershellgallery.com/api/v2/package/EnhancedHTML2/2.0"
-                $output = "$PSScriptRoot\enhancedhtml2.1.0.1.zip"
+                $output = = Join-Path $env:TEMP -ChildPath "enhancedhtml2.1.0.1.zip"
             
                 $wc = New-Object System.Net.WebClient
 
