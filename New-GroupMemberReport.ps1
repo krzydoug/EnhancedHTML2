@@ -3,19 +3,14 @@ Function New-GroupMemberReport {
         #requires -module EnhancedHTML2
         <#
         .SYNOPSIS
-        Generates an HTML-based system report for one or more computers.
-        Each computer specified will result in a separate HTML file; 
-        specify the -Path as a folder where you want the files written.
-        Note that existing files will be overwritten.
-
-        .PARAMETER ComputerName
-        One or more computer names or IP addresses to query.
-
+        Generates an HTML-based report for one or more AD groups.
+        All groups will be in a table that is hidden and can be expanded individually
+        
+        .PARAMETER Group
+        The group(s) to report members for.
+        
         .PARAMETER Path
         The path of the folder where the files should be written.
-
-        .PARAMETER CssPath
-        The path and filename of the CSS template to use. 
 
         .EXAMPLE
         New-GroupMemberReport -Group "Domain Admins","SSLVPN-Users","RDGatewayUsers" -Path c:\Reports
