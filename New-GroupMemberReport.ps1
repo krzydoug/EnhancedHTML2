@@ -1,7 +1,8 @@
 Function New-GroupMemberReport {
 
-        #requires -module EnhancedHTML2
+        
         <#
+        requires -module EnhancedHTML2
         .SYNOPSIS
         Generates an HTML-based report for one or more AD groups.
         All groups will be in a table that is hidden and can be expanded individually
