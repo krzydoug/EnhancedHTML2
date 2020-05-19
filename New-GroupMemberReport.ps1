@@ -18,6 +18,8 @@ Function New-GroupMemberReport {
 
         .EXAMPLE
         "Domain Admins","SSLVPN-Users","RDGatewayUsers" | New-GroupMemberReport -Path c:\Reports
+        
+        
         #>
         [CmdletBinding()]
         param(
