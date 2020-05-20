@@ -264,7 +264,7 @@ Function New-GroupMemberReport {
                         'PreContent'="<h1>Group Membership Report created $(Get-Date)</h1>";
                 'HTMLFragments'=@($fragments)}
             ConvertTo-EnhancedHTML @params |
-            Out-File -FilePath $filepath
+            Out-File -FilePath $filepath -Append
 
         }
 
