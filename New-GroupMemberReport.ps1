@@ -43,21 +43,10 @@ Function New-GroupMemberReport {
             if(Get-Module -Name EnhancedHTML2 -ErrorAction SilentlyContinue)
             {
                 Remove-Module EnhancedHTML2
+                Import-Module EnhancedHTML2
             }
             else
             {
-                $url = "https://www.powershellgallery.com/api/v2/package/EnhancedHTML2/2.0"
-                $output = Join-Path $env:TEMP -ChildPath "enhancedhtml2.1.0.1.zip"
-            
-                $wc = New-Object System.Net.WebClient
-
-                Try
-                {
-                    $wc.DownloadFile($url, $output)
-                }
-                catch
-                {}
-
                 $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
 
                 if($currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))
@@ -69,19 +58,33 @@ Function New-GroupMemberReport {
                     $extractpath = Join-Path $env:USERPROFILE -ChildPath 'Documents\WindowsPowerShell\Modules\EnhancedHTML2\2.1.0.1'
                 }
 
-                try
+                if(-not(Test-Path $extractpath))
                 {
-                    Expand-Archive -Path $output -DestinationPath $extractpath
-                    Start-Sleep -Seconds 2
-                    Remove-Item $output
-                }
-                catch
-                {}
+                    $url = "https://www.powershellgallery.com/api/v2/package/EnhancedHTML2/2.0"
+                    $output = Join-Path $env:TEMP -ChildPath "enhancedhtml2.1.0.1.zip"
             
-            }
-            $modulefile = Join-Path $extractpath -ChildPath "EnhancedHTML2.psm1"
-            Import-Module $modulefile
+                    $wc = New-Object System.Net.WebClient
 
+                    Try
+                    {
+                        $wc.DownloadFile($url, $output)
+                    }
+                    catch
+                    {}
+
+                    try
+                    {
+                        Expand-Archive -Path $output -DestinationPath $extractpath -Force
+                        Start-Sleep -Seconds 2
+                        Remove-Item $output
+                    }
+                    catch
+                    {}
+                }
+
+                $modulefile = Join-Path $extractpath -ChildPath "EnhancedHTML2.psm1"
+                Import-Module $modulefile
+            }
 
         $style = @"
             body {
