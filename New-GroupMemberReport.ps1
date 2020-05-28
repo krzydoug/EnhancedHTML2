@@ -12,10 +12,8 @@ Function New-GroupMemberReport {
         
         .PARAMETER Path
         The path of the folder where the files should be written.
-
         .EXAMPLE
         New-GroupMemberReport -Group "Domain Admins","SSLVPN-Users","RDGatewayUsers" -Path c:\Reports
-
         .EXAMPLE
         "Domain Admins","SSLVPN-Users","RDGatewayUsers" | New-GroupMemberReport -Path c:\Reports
         
@@ -40,12 +38,7 @@ Function New-GroupMemberReport {
                 Add-WindowsCapability -Name $rsat.name -Online
             }
         
-            if(Get-Module -Name EnhancedHTML2 -ErrorAction SilentlyContinue)
-            {
-                Remove-Module EnhancedHTML2
-                Import-Module EnhancedHTML2
-            }
-            else
+            if( -not ( Get-Module -Name EnhancedHTML2 -ErrorAction SilentlyContinue))
             {
                 $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
 
@@ -84,7 +77,14 @@ Function New-GroupMemberReport {
 
                 $modulefile = Join-Path $extractpath -ChildPath "EnhancedHTML2.psm1"
                 Import-Module $modulefile
+
+                if( -not ( Get-Module -Name EnhancedHTML2 -ErrorAction SilentlyContinue))
+                {
+                    write-warning "EnhancedHTML2 module not available"
+                    break
+                }
             }
+
 
         $style = @"
             body {
@@ -92,29 +92,23 @@ Function New-GroupMemberReport {
                 font-family:Calibri,Tahoma;
                 font-size: 12pt;
             }
-
             h1 {
                 color:#003BD8;
                 text-align:center;
                 font-size: 20pt;
             }
-
             h2 {
                 border-top:1px solid #666666;
                 font-size: 16pt;
             }
-
             th {
                 font-weight:bold;
                 color:#eeeeee;
                 background-color:#333333;
                 cursor:pointer;
             }
-
             .odd  { background-color:#ffffff; }
-
             .even { background-color:#dddddd; }
-
             .paginate_enabled_next, .paginate_enabled_previous {
                 cursor:pointer; 
                 border:1px solid #222222; 
@@ -123,7 +117,6 @@ Function New-GroupMemberReport {
                 margin:4px;
                 border-radius:2px;
             }
-
             .paginate_disabled_previous, .paginate_disabled_next {
                 color:#666666; 
                 cursor:pointer;
@@ -132,15 +125,10 @@ Function New-GroupMemberReport {
                 margin:4px;
                 border-radius:2px;
             }
-
             .dataTables_info { margin-bottom:4px; }
-
             .sectionheader { cursor:pointer; }
-
             .sectionheader:hover { color:red; }
-
             .grid { width:100% }
-
             .red {
                 color:red;
                 font-weight:bold;
@@ -231,15 +219,16 @@ Function New-GroupMemberReport {
 
                     $FullMembersDetails | ConvertTo-EnhancedHTMLFragment @params -Properties @($FullMembersDetails | Get-Member -MemberType Properties | select -ExpandProperty name)
             }
-
+            
             $reportname = "Group Membership Report - $((get-date).ToShortDateString().replace('/','-')).html"
             $filepath = Join-Path -Path $Path -ChildPath $reportname
+
+            $fragments = New-Object System.Collections.Generic.List[object]
         }
 
         PROCESS
         {
-
-            $fragments = foreach($grp in $group)
+            $fragments += foreach($grp in $group)
             {
                 if($grp -eq "rdgatewaycomputers")
                 {
@@ -249,8 +238,12 @@ Function New-GroupMemberReport {
                 {
                     Get-GroupMembers -Group $grp
                 }
-
             }
+        }
+
+        end
+        {
+        
             <#
             $params = @{'CssStyleSheet'=$style;
                         'Title'="System Report for $computer";
@@ -261,18 +254,14 @@ Function New-GroupMemberReport {
             ConvertTo-EnhancedHTML @params |
             Out-File -FilePath $filepath
             #>
-        
+
             $params = @{'CssStyleSheet'=$style;
                         'Title'="Group Membership Report";
                         'PreContent'="<h1>Group Membership Report created $(Get-Date)</h1>";
                 'HTMLFragments'=@($fragments)}
             ConvertTo-EnhancedHTML @params |
-            Out-File -FilePath $filepath -Append
+            Out-File -FilePath $filepath
 
-        }
-
-        end
-        {
             get-item $filepath
         }
     
