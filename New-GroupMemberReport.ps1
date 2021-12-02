@@ -28,14 +28,17 @@ Function New-GroupMemberReport {
             [string[]]$Group,
 
             [Parameter(Mandatory=$True)]
-            [string]$Path
+            [ValidateScript({if(-not (Test-Path -LiteralPath $_)){throw "Directory $($_) does not exist"}else{$true}})]
+            [System.IO.DirectoryInfo]$Path
         )
 
         BEGIN
         {
-            if(($rsat = Get-WindowsCapability -Name rsat.active* -Online).state -ne 'Installed')
-            {
-                Add-WindowsCapability -Name $rsat.name -Online
+            if((Get-CimInstance -ClassName Win32_OperatingSystem).Name -notlike '*server*'){
+                if(($rsat = Get-WindowsCapability -Name rsat.active* -Online).state -ne 'Installed')
+                {
+                    Add-WindowsCapability -Name $rsat.name -Online
+                }
             }
         
             if( -not ( Get-Module -Name EnhancedHTML2 -ErrorAction SilentlyContinue))
@@ -259,10 +262,10 @@ Function New-GroupMemberReport {
                         'Title'="Group Membership Report";
                         'PreContent'="<h1>Group Membership Report created $(Get-Date)</h1>";
                 'HTMLFragments'=@($fragments)}
-            ConvertTo-EnhancedHTML @params |
-            Out-File -FilePath $filepath
 
-            get-item $filepath
+            ConvertTo-EnhancedHTML @params | Set-Content -Path $filepath
+
+            Get-Item $filepath
         }
     
 }
