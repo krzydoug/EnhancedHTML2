@@ -1,4 +1,4 @@
-#requires -module EnhancedHTML2
+
 <#
 .SYNOPSIS
 Generates an HTML-based system report for one or more computers.
@@ -32,7 +32,58 @@ param(
 
 BEGIN {
 
-    Remove-Module EnhancedHTML2
+    if( -not ( Get-Module -ListAvailable -Name EnhancedHTML2 -ErrorAction SilentlyContinue))
+    {
+        $path = @{
+            Desktop = 'WindowsPowershell'
+            Core    = 'Powershell'
+        }
+
+        $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+
+        if($currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))
+        {
+            $extractpath = Join-Path $env:ProgramFiles -ChildPath "$($path[$PSVersionTable.PSEdition])\Modules\EnhancedHTML2\2.1.0.1"
+        }
+        else
+        {
+            $extractpath = Join-Path $env:USERPROFILE -ChildPath "Documents\$($path[$PSVersionTable.PSEdition])\Modules\EnhancedHTML2\2.1.0.1"
+        }
+
+        if(-not(Test-Path $extractpath))
+        {
+            $url = "https://www.powershellgallery.com/api/v2/package/EnhancedHTML2/2.1.0.1"
+            $output = Join-Path $env:TEMP -ChildPath "enhancedhtml2.1.0.1.zip"
+
+            $wc = New-Object System.Net.WebClient
+
+            Try
+            {
+                $wc.DownloadFile($url, $output)
+            }
+            catch
+            {}
+
+            try
+            {
+                Expand-Archive -Path $output -DestinationPath $extractpath -Force
+                Start-Sleep -Seconds 2
+                Remove-Item $output
+            }
+            catch
+            {}
+        }
+
+        $modulefile = Join-Path $extractpath -ChildPath "EnhancedHTML2.psm1"
+        Import-Module $modulefile
+
+        if( -not ( Get-Module -Name EnhancedHTML2 -ErrorAction SilentlyContinue))
+        {
+            write-warning "EnhancedHTML2 module not available"
+            break
+        }
+    }
+
     Import-Module EnhancedHTML2
 
 
