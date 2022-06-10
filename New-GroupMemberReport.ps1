@@ -1,93 +1,95 @@
 Function New-GroupMemberReport {
 
+    <#
+    requires -module EnhancedHTML2
+    .SYNOPSIS
+    Generates an HTML-based report for one or more AD groups.
+    All groups will be in a table that is hidden and can be expanded individually
         
-        <#
-        requires -module EnhancedHTML2
-        .SYNOPSIS
-        Generates an HTML-based report for one or more AD groups.
-        All groups will be in a table that is hidden and can be expanded individually
+    .PARAMETER Group
+    The group(s) to report members for.
         
-        .PARAMETER Group
-        The group(s) to report members for.
-        
-        .PARAMETER Path
-        The path of the folder where the files should be written.
-        .EXAMPLE
-        New-GroupMemberReport -Group "Domain Admins","SSLVPN-Users","RDGatewayUsers" -Path c:\Reports
-        .EXAMPLE
-        "Domain Admins","SSLVPN-Users","RDGatewayUsers" | New-GroupMemberReport -Path c:\Reports
+    .PARAMETER Path
+    The path of the folder where the files should be written.
+    .EXAMPLE
+    New-GroupMemberReport -Group "Domain Admins","SSLVPN-Users","RDGatewayUsers" -Path c:\Reports
+    .EXAMPLE
+    "Domain Admins","SSLVPN-Users","RDGatewayUsers" | New-GroupMemberReport -Path c:\Reports
         
         
-        #>
-        [CmdletBinding()]
-        param(
-            [Parameter(
-                Mandatory=$True,
-                ValueFromPipeline=$True,
-                ValueFromPipelineByPropertyName=$True)]
-            [string[]]$Group,
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(
+            Mandatory=$True,
+            ValueFromPipeline=$True,
+            ValueFromPipelineByPropertyName=$True)]
+        [string[]]$Group,
 
-            [Parameter(Mandatory=$True)]
-            [ValidateScript({if(-not (Test-Path -LiteralPath $_)){throw "Directory $($_) does not exist"}else{$true}})]
-            [System.IO.DirectoryInfo]$Path
-        )
+        [Parameter(Mandatory=$True)]
+        [ValidateScript({if(-not (Test-Path -LiteralPath $_)){throw "Directory $($_) does not exist"}else{$true}})]
+        [System.IO.DirectoryInfo]$Path
+    )
 
-        BEGIN
-        {
-            if((Get-CimInstance -ClassName Win32_OperatingSystem).Name -notlike '*server*'){
-                if(($rsat = Get-WindowsCapability -Name rsat.active* -Online).state -ne 'Installed')
-                {
-                    Add-WindowsCapability -Name $rsat.name -Online
-                }
-            }
-        
-            if( -not ( Get-Module -Name EnhancedHTML2 -ErrorAction SilentlyContinue))
+    BEGIN
+    {
+        if((Get-CimInstance -ClassName Win32_OperatingSystem).Name -notlike '*server*'){
+            if(($rsat = Get-WindowsCapability -Name rsat.active* -Online).state -ne 'Installed')
             {
-                $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+                Add-WindowsCapability -Name $rsat.name -Online
+            }
+        }
+        
+        if( -not ( Get-Module -ListAvailable -Name EnhancedHTML2 -ErrorAction SilentlyContinue)){
+            $path = @{
+                Desktop = 'WindowsPowershell'
+                Core    = 'Powershell'
+            }
 
-                if($currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))
-                {
-                    $extractpath = Join-Path $env:ProgramFiles -ChildPath 'WindowsPowerShell\Modules\EnhancedHTML2\2.1.0.1'
+            $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+
+            if($currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){
+                $extractpath = Join-Path $env:ProgramFiles -ChildPath "$($path[$PSVersionTable.PSEdition])\Modules\EnhancedHTML2\2.1.0.1"
+            }
+            else{
+                $extractpath = Join-Path $env:USERPROFILE -ChildPath "Documents\$($path[$PSVersionTable.PSEdition])\Modules\EnhancedHTML2\2.1.0.1"
+            }
+
+            if(-not(Test-Path $extractpath)){
+                $url = "https://www.powershellgallery.com/api/v2/package/EnhancedHTML2/2.1.0.1"
+                $output = Join-Path $env:TEMP -ChildPath "enhancedhtml2.1.0.1.zip"
+
+                $wc = New-Object System.Net.WebClient
+
+                Try{
+                    $wc.DownloadFile($url, $output)
                 }
-                else
-                {
-                    $extractpath = Join-Path $env:USERPROFILE -ChildPath 'Documents\WindowsPowerShell\Modules\EnhancedHTML2\2.1.0.1'
+                catch{}
+
+                try{
+                    Expand-Archive -Path $output -DestinationPath $extractpath -Force
+                    Start-Sleep -Seconds 2
+                    Remove-Item $output
                 }
+                catch{}
+            }
 
-                if(-not(Test-Path $extractpath))
-                {
-                    $url = "https://www.powershellgallery.com/api/v2/package/EnhancedHTML2/2.0"
-                    $output = Join-Path $env:TEMP -ChildPath "enhancedhtml2.1.0.1.zip"
-            
-                    $wc = New-Object System.Net.WebClient
+            $modulefile = Join-Path $extractpath -ChildPath "EnhancedHTML2.psm1"
+            Import-Module $modulefile
 
-                    Try
-                    {
-                        $wc.DownloadFile($url, $output)
-                    }
-                    catch
-                    {}
+            if( -not ( Get-Module -Name EnhancedHTML2 -ErrorAction SilentlyContinue)){
+                write-warning "EnhancedHTML2 module not available"
+                break
+            }
 
-                    try
-                    {
-                        Expand-Archive -Path $output -DestinationPath $extractpath -Force
-                        Start-Sleep -Seconds 2
-                        Remove-Item $output
-                    }
-                    catch
-                    {}
-                }
+            Import-Module EnhancedHTML2
 
-                $modulefile = Join-Path $extractpath -ChildPath "EnhancedHTML2.psm1"
-                Import-Module $modulefile
-
-                if( -not ( Get-Module -Name EnhancedHTML2 -ErrorAction SilentlyContinue))
+            if( -not ( Get-Module -Name EnhancedHTML2 -ErrorAction SilentlyContinue))
                 {
                     write-warning "EnhancedHTML2 module not available"
                     break
                 }
             }
-
 
         $style = @"
             body {
@@ -138,7 +140,7 @@ Function New-GroupMemberReport {
             }
 "@
 
-            function Get-GroupMembers {
+        function Get-GroupMembers {
                 [CmdletBinding()]
                 param(
                     [Parameter(Mandatory=$True)][string]$Group
@@ -188,7 +190,7 @@ Function New-GroupMemberReport {
                     $FullMembersDetails | ConvertTo-EnhancedHTMLFragment @params -Properties @($FullMembersDetails | Get-Member -MemberType Properties | select -ExpandProperty name)
             }
 
-            function Get-GroupComputers {
+        function Get-GroupComputers {
                 [CmdletBinding()]
                 param(
                     [Parameter(Mandatory=$True)][string]$Group
@@ -223,14 +225,14 @@ Function New-GroupMemberReport {
                     $FullMembersDetails | ConvertTo-EnhancedHTMLFragment @params -Properties @($FullMembersDetails | Get-Member -MemberType Properties | select -ExpandProperty name)
             }
             
-            $reportname = "Group Membership Report - $((get-date).ToShortDateString().replace('/','-')).html"
-            $filepath = Join-Path -Path $Path -ChildPath $reportname
+        $reportname = "Group Membership Report - $((get-date).ToShortDateString().replace('/','-')).html"
+        $filepath = Join-Path -Path $Path -ChildPath $reportname
 
-            $fragments = New-Object System.Collections.Generic.List[object]
-        }
+        $fragments = New-Object System.Collections.Generic.List[object]
+    }
 
-        PROCESS
-        {
+    PROCESS
+    {
             $fragments += foreach($grp in $group)
             {
                 if($grp -eq "rdgatewaycomputers")
@@ -244,9 +246,7 @@ Function New-GroupMemberReport {
             }
         }
 
-        end
-        {
-        
+    end{
             <#
             $params = @{'CssStyleSheet'=$style;
                         'Title'="System Report for $computer";
@@ -266,6 +266,5 @@ Function New-GroupMemberReport {
             ConvertTo-EnhancedHTML @params | Set-Content -Path $filepath
 
             Get-Item $filepath
-        }
-    
+    }
 }
